@@ -5,6 +5,7 @@ services:
     container_name: fludata
     environment:
       POSTGRES_USER: user
+      PGUSER: user
       POSTGRES_PASSWORD: pass
       POSTGRES_DB: fludata
     ports:
