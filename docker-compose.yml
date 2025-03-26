@@ -1,0 +1,14 @@
+services:
+  fludata:
+    image: postgres
+    restart: always
+    container_name: fludata
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: fludata
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./database/database_data:/var/lib/postgresql/data
