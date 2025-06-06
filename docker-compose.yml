@@ -13,3 +13,7 @@ services:
     volumes:
       - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql
       - ./database/database_data:/var/lib/postgresql/data
+  adminer:
+    image: adminer
+    ports:
+      - 3333:8080
