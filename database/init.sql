@@ -2,7 +2,7 @@
 CREATE TABLE countries (
     CountryID int NOT NULL,
     CountryName varchar(255) NOT NULL,
-    Region ENUM('North', 'South') NOT NULL,
+    Region varchar(255) NOT NULL,
     PRIMARY KEY (CountryID)
 );
 
@@ -21,3 +21,25 @@ CREATE TABLE fornight_surv_data (
     FOREIGN KEY (StateID) REFERENCES states(StateID)
 );
 
+CREATE TABLE trends_data (
+    StateID int NOT NULL,
+    EndDate DATE NOT NULL,
+    Trend varchar(255) NOT NULL,
+    FOREIGN KEY (StateID) REFERENCES states(StateID)
+);
+
+INSERT INTO countries (CountryID, CountryName, Region)
+VALUES
+(1, 'Australia', 'South'),
+(2, 'USA', 'North');
+
+-- INSERT INTO states (StateID, StateName, CountryID)
+-- VALUES
+-- (1, 'ACT', 1),
+-- (2, 'NSW', 1),
+-- (3, 'NT', 1),
+-- (4, 'QLD', 1),
+-- (5, 'SA', 1),
+-- (6, 'TAS', 1),
+-- (7, 'VIC', 1),
+-- (8, 'WA', 1);

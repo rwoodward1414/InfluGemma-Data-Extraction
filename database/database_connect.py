@@ -9,7 +9,6 @@ def connect():
             host="localhost",
             port="5432"
         )
-        print("connected")
         return conn
     except Exception as e:
         print("rip")
