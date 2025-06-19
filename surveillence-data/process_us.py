@@ -1,5 +1,6 @@
 from datetime import datetime
 
+# Convert week number to a datetime object that represents the start of the week
 def get_week_date(year, week):
     date_string = str(year) + "-" + str(week) + "-1"
     start_date = datetime.strptime(date_string, "%Y-%W-%w")
@@ -7,14 +8,6 @@ def get_week_date(year, week):
 
 import os, sys
 import pandas
-
-path = os.path.dirname(os.path.abspath('../database/database_update.py'))
-if path not in sys.path:
-    sys.path.append(path)
-path = os.path.dirname(os.path.abspath('../helper/states.py'))
-if path not in sys.path:
-    sys.path.append(path)
-
 from datebase_update import add_many_surv
 from states import us_state_dict
 
@@ -40,9 +33,11 @@ combined = []
 for state, group in df.groupby("REGION"):
     group = group.reset_index(drop=True)
     for i in range(0, len(group) - 2, 2):
+        # Get the date the data ranges ends on
         end_year = group.loc[i + 2, "YEAR"]
         end_week = group.loc[i + 2, "WEEK"]
         end_date = get_week_date(end_year, end_week)
+        # Add the current week and the next weeks totals
         total_cases = group.loc[i, "TOTAL"] + group.loc[i + 1, "TOTAL"]
 
         combined.append({
