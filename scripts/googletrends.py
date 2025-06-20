@@ -4,8 +4,16 @@ import sys, os
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from serpapi import GoogleSearch
+
+path = os.path.dirname(os.path.abspath('../database/database_update.py'))
+if path not in sys.path:
+    sys.path.append(path)
+path = os.path.dirname(os.path.abspath('../helper/states.py'))
+if path not in sys.path:
+    sys.path.append(path)
+
 from datebase_update import add_trend, get_state, add_many_trend
-from states import aus_state_dict, us_state_dict, trends_aus_states, trends_us_states
+from states import aus_state_dict, us_state_dict, trends_aus_states, trends_us_states, aus_states
 
 load_dotenv()
 api_key = os.getenv("SERPAPIKEY")

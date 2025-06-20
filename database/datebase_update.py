@@ -109,3 +109,45 @@ def add_many_trend(df):
 
     conn.commit()
     conn.close()
+
+def get_fortnight_surv(state_id, date):
+    conn = connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT CaseNumber
+        FROM fortnight_surv_data
+        WHERE EndDate = (
+                SELECT MIN(EndDate)
+                FROM fortnight_surv_data
+                WHERE EndDate > %s
+                AND StateID = %s
+        )
+        """, (date, state_id))
+    
+    case_num = cur.fetchone()
+
+    cur.close()
+    conn.close()
+    return case_num
+
+def get_trend(state_id, date):
+    conn = connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT trend
+        FROM = trends_data
+        WHERE EndDate = (
+                SELECT MIN(EndDate)
+                FROM trends_data
+                WHERE EndDate > %s
+                AND StateID = %s
+        )
+        """, (date, state_id))
+    
+    trend = cur.fetchone()
+
+    cur.close()
+    conn.close()
+    return trend
