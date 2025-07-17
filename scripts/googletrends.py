@@ -13,7 +13,7 @@ if path not in sys.path:
     sys.path.append(path)
 
 from datebase_update import add_trend, get_state, add_many_trend
-from states import aus_state_dict, us_state_dict, trends_aus_states, trends_us_states, aus_states
+from states import aus_state_dict, us_state_dict, trends_aus_states, trends_us_states, aus_states, us_states
 
 load_dotenv()
 api_key = os.getenv("SERPAPIKEY")
@@ -69,3 +69,8 @@ def trends(country, state, start, end):
 
     records_df = pandas.DataFrame(records)
     add_many_trend(records_df)
+    print("done " + state)
+
+us = ["Hawaii", "Iowa", "Idaho", "Illinois", "Indiana", "Kansas", "Kentucky", "Louisiana", "Massachusetts", "Maryland", "Maine", "Michigan", "Minnesota", "Missouri", "Mississippi", "Montana", "North Carolina", "North Dakota", "Nebraska", "New Hampshire", "New Jersey", "New Mexico", "Nevada", "New York", "Ohio", "Oklahoma", "Oregon", "Pennsylvania", "Rhode Island", "South Carolina", "South Dakota", "Tennessee", "Texas", "Utah", "Virginia", "Vermont", "Washington", "Wisconsin", "West Virginia", "Wyoming"]
+for state in us:
+    trends("us", state, "2016-01-01", "2024-12-01")
