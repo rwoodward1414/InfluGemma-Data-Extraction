@@ -116,14 +116,15 @@ def get_fortnight_surv(state_id, date):
 
     cur.execute("""
         SELECT CaseNumber
-        FROM fortnight_surv_data
-        WHERE EndDate = (
+        FROM fornight_surv_data
+        WHERE StateID = %s
+        AND EndDate = (
                 SELECT MIN(EndDate)
-                FROM fortnight_surv_data
+                FROM fornight_surv_data
                 WHERE EndDate > %s
                 AND StateID = %s
         )
-        """, (date, state_id))
+        """, (state_id, date, state_id))
     
     case_num = cur.fetchone()
 
@@ -137,7 +138,7 @@ def get_trend(state_id, date):
 
     cur.execute("""
         SELECT trend
-        FROM = trends_data
+        FROM trends_data
         WHERE EndDate = (
                 SELECT MIN(EndDate)
                 FROM trends_data
