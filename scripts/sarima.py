@@ -57,4 +57,3 @@ def eval_sarima():
   print(predicted)
   print(actual)
 
-eval_sarima()

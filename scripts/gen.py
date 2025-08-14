@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 import os, sys
 import random
-import json
+import pandas
 
 
 path = os.path.dirname(os.path.abspath('../database/database_update.py'))
@@ -13,17 +13,24 @@ if path not in sys.path:
 path = os.path.dirname(os.path.abspath('../demographic-data/demo.py'))
 if path not in sys.path:
     sys.path.append(path)
-
+path = os.path.dirname(os.path.abspath('../../sick-post-classifier/classify/posts.py'))
+if path not in sys.path:
+    sys.path.append(path)
+path = os.path.dirname(os.path.abspath('../../sick-post-classifier/classify_posts.py'))
+if path not in sys.path:
+    sys.path.append(path)
 
 from datebase_update import get_fortnight_surv, get_trend
-from states import aus_state_dict, us_state_dict, aus_states, us_states
+from states import aus_state_dict, us_state_dict, aus_states, us_states, get_region
 from demo import get_aus_census_data, get_us_census_data
 from sarima import sarima_forecast
+from posts import gather_posts
+from classify_posts import classify_flu_posts
 
 # Country : us or aus
 # State : Full US name, Initals Aus
 # Start date : yyyy-mm-dd
-def generate_prompt(country, state, date):
+def generate_prompt(country, state, date, output_path):
     start = datetime.strptime(date, "%Y-%m-%d")
     end = start + timedelta(days=15)
 
@@ -34,10 +41,12 @@ def generate_prompt(country, state, date):
         states = aus_state_dict()
         state_id = states[state]
         demo = get_aus_census_data(state)
+        region = "aus"
     elif country == "us":
         states = us_state_dict()
         state_id = states[state]
         demo = get_us_census_data(state)
+        region = get_region(state)
     else:
         print("Invalid country")
         return None
@@ -48,6 +57,8 @@ def generate_prompt(country, state, date):
     two_weeks = get_fortnight_surv(state_id, two_weeks_ago)[0]
     current = get_fortnight_surv(state_id, start)[0]
     trend = get_trend(state_id, start)[0]
+    posts = gather_posts(country, region, date)
+    flu_post_percent = classify_flu_posts(posts)
 
     forecast = sarima_forecast(state_id, start.strftime("%Y-%m-%d"))
 
@@ -57,6 +68,23 @@ def generate_prompt(country, state, date):
 
     actual_cases = get_fortnight_surv(state_id, end)[0]
     actual_trend = ""
+
+    curr_per_hundthou = (current / float(demo[0]) * 1000
+    actual_per_hundthou = (actual_cases / float(demo[0]) * 1000
+
+    change_per_hundthou = actual_per_hundthou - curr_per_hundthou
+
+    if change_per_hundthou >= 2:
+        actual_trend = "Substantial Increase"
+    elif change_per_hundthou >= 0.2 and change_per_hundthou < 2:
+        actual_trend = "Increase"
+    elif change_per_hundthou >= 0 and change_per_hundthou < 0.2:
+        actual_trend = "Stable"
+    elif change_per_hundthou >= -0.2 and change_per_hundthou < 0:
+        actual_trend = "Decrease"
+    else:
+        actual_trend = "Substantial Decrease"
+
 
     templates = []
     facts = []
@@ -84,8 +112,10 @@ def generate_prompt(country, state, date):
         else:
             age_text = [f"The relatively young and mobile population may contribute to sustained transmission. ", f"Demographics, including a median age of {str(demo[1])}, suggest the population is active enough to drive further spread."]
             facts.append(random.choice(age_text))
+
+        if flu_post_percent >= 0.5:
+            facts.append(f"A higher than average number of reddit posts relate to flu, suggesting more spread throughout the community")
         
-        actual_trend = "Increasing"
     else:
         templates = [
             f"Flu cases are expected to decline to {actual_cases} in the next two weeks, down from {two_weeks} in the previous fortnight. ",
@@ -113,22 +143,24 @@ def generate_prompt(country, state, date):
         else:
             age_text = [f"The relatively young and mobile population may contribute to sustained transmission. ", f"Demographics, including a median age of {str(demo[1])}, suggest the population is active enough to drive further spread."]
             facts.append(random.choice(age_text))
-        actual_trend = "Decreasing"
+        if flu_post_percent <= 0.1:
+            facts.append("Very few reddit posts relate to flu, suggesting fewer people are currently discussing it.")
 
     summary = random.sample(facts, k=2)
 
-    data = [{
-        "prompt": f"You are a flu forecasting model. Based on the data below, generate a case number prediction and trend for new cases over the next two weeks for the state, and provide a short summary explaining the prediction.\nIn the state of {state}, Case numbers last fortnight ago were {two_weeks}\nCase number four weeks ago were {four_weeks}\nPredictions indicate that cases will {indication} over the next two weeks to {(int(forecast))}\nThe current google search volume for flu related terms is {trend}\nThis state has a population of {demo[0]}, a median age of {demo[1]}, and a median yearly salary of {demo[2]}",
-        "output": f"Predicted cases: {actual_cases}\nTrend: {actual_trend}\nSummary:\n {random.choice(templates)}{summary[0]}{summary[1]}"
+    # data = [{
+      #  "prompt": f"You are a flu forecasting model. Based on the data below, generate a case number prediction, and predict the trend for cases over the next two weeks from the following options: Substantial Increase, Increase, Stable, Decrease, Substantial Decrease. Provide a short summary explaining the prediction.\nIn the state of {state}, case numbers last fortnight ago were {two_weeks}\nCase number four weeks ago were {four_weeks}\nPredictions indicate that cases will {indication} over the next two weeks to {(int(forecast))}\nThe current google search volume for flu related terms is {trend}\nThis state has a population of {demo[0]}, a median age of {demo[1]}, and a median yearly salary of {demo[2]}\nCurrent reddit activity shows {flu_post_percent}% of posts in the region realte to influenza infection."
+       # "output": f"Predicted cases: {actual_cases}\nTrend: {actual_trend}\nSummary:\n {random.choice(templates)}{summary[0]}{summary[1]}"
 
-    },]
+   # },]
 
-    print(data)
+    prompt = f"You are a flu forecasting model. Based on the data below, generate a case number prediction, and predict the trend for cases over the next two weeks from the following options: Substantial Increase, Increase, Stable, Decrease, Substantial Decrease. Provide a short summary explaining the prediction.\nIn the state of {state}, case numbers last fortnight ago were {two_weeks}\nCase number four weeks ago were {four_weeks}\nPredictions indicate that cases will {indication} over the next two weeks to {(int(forecast))}\nThe current google search volume for flu related terms is {trend}\nThis state has a population of {demo[0]}, a median age of {demo[1]}, and a median yearly salary of {demo[2]}\nCurrent reddit activity shows {flu_post_percent}% of posts in the region realte to influenza infection."
 
-    with open("../training/flu_forecast_train.json", "w") as f:
-        for item in data:
-            json.dump(item, f)
-            f.write("\n")
+    explanation = f"{random.choice(templates)}{summary[0]}{summary[1]}"
+
+    data = [state, country, date, prompt, explanation, actual_cases, actual_trend]
+    df = pandas.DataFrame(data, columns=['state', 'country', 'date', 'prompt', 'explanation', 'actual_cases', 'actual_trend'])
+    df.to_csv(path, mode='a')
 
 generate_prompt("aus", "QLD", "2022-05-01")
 
@@ -151,4 +183,4 @@ def generate_random():
 
     generate_prompt(random_country, random_state, random_date)
     
-generate_random()
+# generate_random()

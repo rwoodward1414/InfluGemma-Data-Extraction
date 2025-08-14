@@ -80,6 +80,8 @@ state_subreddits = {
     "NT": "darwin",
     "QLD": "brisbane",
     "VIC": "melbourne",
+    "SA": "Adelaide",
+    "WA": "perth",
     "Washington": "seattle",
     "Alabama": "HuntsvilleAlabama",
     "Alaska": "Alaska",
@@ -132,6 +134,23 @@ state_subreddits = {
     "Wyoming": "wyoming"
 }
 
+us_regions = {
+    1: ["Connecticut", "Maine", "Massachusetts", "New Hampshire", "Rhode Island", "Vermont"],
+    2: ["New Jersey", "New York", "Pennsylvania"],
+    3: ["Illinois", "Indiana", "Michigan", "Ohio", "Wisconsin"],
+    4: ["Iowa", "Kansas", "Minnesota", "Missouri", "Nebraska", "North Dakota", "South Dakota"],
+    5: ["Delaware", "Florida", "Georgia", "Maryland", "North Carolina", "South Carolina", "Virginia", "West Virginia"],
+    6: ["Alabama", "Kentucky", "Mississippi", "Tennessee"],
+    7: ["Arkansas", "Louisiana", "Oklahoma", "Texas"],
+    8: ["Arizona", "Colorado", "Idaho", "Montana", "Nevada", "New Mexico", "Utah", "Wyoming"],
+    9: ["Alaska", "California", "Hawaii", "Oregon", "Washington"]
+}
+
+def get_region(state_name):
+    for region_key, region_list in us_regions.items():
+        if state_name in region_list:
+            return region_key
+    return "Invalid state"
 
 def add_aus_states():
     for state in aus_states:
