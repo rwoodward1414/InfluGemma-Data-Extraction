@@ -107,6 +107,24 @@ def add_many_surv(df):
     conn.commit()
     conn.close()
 
+def get_many_surv(state_id, start, end):
+    conn = connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT CaseNumber
+        FROM fornight_surv_data
+        WHERE StateID = %s
+        AND EndDate BETWEEN %s AND %s
+        """, (state_id, start, end))
+    
+    case_num = cur.fetchall()
+    df = pandas.DataFrame(case_num)
+
+    cur.close()
+    conn.close()
+    return df
+
 def add_trend(state_id, end_date, trend):
     conn = connect()
     cur = conn.cursor()
@@ -218,4 +236,38 @@ def get_trend(state_id, date):
     cur.close()
     conn.close()
     return trend
+
+def add_vaccination(state_id, end_date, vacc_perc):
+    conn = connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+        INSERT INTO vaccination (StateID, EndDate, Percent)
+        VALUES (%s, %s, %s)
+    """, (state_id, end_date, vacc_perc))
+
+    conn.commit()
+    conn.close()
+
+def get_vaccination(state_id, date):
+    conn = connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT Percent
+        FROM vaccination
+        WHERE StateID = %s
+        AND EndDate = (
+                SELECT MIN(EndDate)
+                FROM vaccination
+                WHERE EndDate > %s
+                AND StateID = %s
+        )
+        """, (state_id, date, state_id))
+    
+    vacc_perc = cur.fetchone()[0]
+
+    cur.close()
+    conn.close()
+    return vacc_perc
 
