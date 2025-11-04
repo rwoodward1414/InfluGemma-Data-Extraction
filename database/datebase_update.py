@@ -48,6 +48,32 @@ def add_state_region(state_id, region_id):
     conn.commit()
     conn.close()
 
+def add_state_demo(state_id, population, med_age, med_wage):
+    conn = connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+        UPDATE states
+        SET population = %s, medAge = %s, medWage = %s
+        WHERE StateID = %s
+    """, (population, med_age, med_wage, state_id))
+
+    conn.commit()
+    conn.close()
+
+def get_state_demo(state_id):
+    conn = connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+        SELECT population, medAge, medWage FROM states
+        WHERE StateID = %s
+                """, (state_id,))
+    result = cur.fetchall()
+    conn.close()
+    return result
+
+
 def get_region(state_id):
     conn = connect()
     cur = conn.cursor()

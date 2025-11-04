@@ -7,6 +7,7 @@ def get_us_census_data(state):
     # Population
     pop_url = 'https://api.census.gov/data/2023/acs/acs1?get=NAME,B01003_001E&for=state:*'
     response = requests.get(pop_url)
+    print(response.status_code)
     data = response.text
     match = re.search(rf'{state}.*?([0-9]{{3,}})', data)
     demo.append(match.group(1))
@@ -14,6 +15,7 @@ def get_us_census_data(state):
     # Median Age
     age_url = 'https://api.census.gov/data/2023/acs/acs1?get=NAME,B01002_001E&for=state:*'
     response = requests.get(age_url)
+    print(response.status_code)
     data = response.text
     match = re.search(rf'{state}.*?([0-9]{{2}}\.[0-9])', data)
     demo.append(match.group(1))
@@ -22,11 +24,15 @@ def get_us_census_data(state):
     wage_url = 'https://api.census.gov/data/2023/acs/acs1?get=NAME,B06011_001E&for=state:*'
     response = requests.get(wage_url)
     data = response.text
+    print(response.status_code)
     match = re.search(rf'{state}.*?([0-9]{{3,}})', data)
     demo.append(match.group(1))
+    print(demo)
 
     return demo
     
+get_us_census_data("California")
+
 
 def get_aus_census_data(state):
     demo = []

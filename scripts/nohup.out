@@ -1,0 +1,2 @@
+postgres: could not access directory "/home/z5397970/thesis/InfluGemma-Data-Extraction/scripts/./postgres_data": No such file or directory
+Run initdb or pg_basebackup to initialize a PostgreSQL data directory.
