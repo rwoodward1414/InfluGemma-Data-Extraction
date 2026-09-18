@@ -1,9 +1,10 @@
+# Helper file containing lists, dictionaries of states and functions to pull state information from database
+
 import os, sys
 
 path = os.path.dirname(os.path.abspath('../database/database_update.py'))
 if path not in sys.path:
     sys.path.append(path)
-
 
 from datebase_update import add_state, get_state, add_state_demo
 
