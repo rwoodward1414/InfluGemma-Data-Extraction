@@ -1,4 +1,3 @@
-from pytrends.request import TrendReq
 import pandas
 import sys, os
 from datetime import datetime, timedelta
@@ -16,7 +15,8 @@ from datebase_update import add_trend, get_state, add_many_trend
 from states import aus_state_dict, us_state_dict, trends_aus_states, trends_us_states, aus_states, us_states
 
 load_dotenv()
-api_key = os.getenv("SERPAPIKEY")
+api_key = "9ff8f7446d6b594cff9c9872663fb13a1767451e263e735493f4f99d23f6269f"
+
 
 def convert_trend_to_text(num):
     if num == 0:
@@ -40,6 +40,8 @@ def trends(country, state, start, end):
 
     # date is in the formate yyyy-mm-dd
     date = start + " " + end
+
+    
 
     params = {
         "api_key": api_key,
@@ -69,3 +71,6 @@ def trends(country, state, start, end):
 
     records_df = pandas.DataFrame(records)
     add_many_trend(records_df)
+
+for state in us_states:
+    trends("us", state, "2024-01-01", "2025-10-30")

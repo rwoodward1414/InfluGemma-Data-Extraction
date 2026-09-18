@@ -6,7 +6,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, root_mean_s
 path = os.path.dirname(os.path.abspath('../database/database_update.py'))
 if path not in sys.path:
     sys.path.append(path)
-from datebase_update import get_fortnight_surv
+from datebase_update import get_fortnight_surv, get_many_surv
 from datetime import datetime, timedelta
 from statsmodels.tsa.statespace.sarimax import SARIMAX
 from statsmodels.stats.diagnostic import acorr_ljungbox
@@ -14,15 +14,18 @@ import numpy as np
 
 def sarima_forecast(state_id, date, forecast_steps=1, order=(1,1,1), seasonal_order=(0,0,0,0)):
   start = datetime.strptime(date, "%Y-%m-%d")
-  dates = []
-  past = []
-  for i in range(77,-1,-1):
-    dates.append(start - timedelta(days=(i*14)))
-  for value in dates:
-    case_num = get_fortnight_surv(state_id, value)[0]
-    past.append(case_num)
+  end = start - timedelta(days=1078)
+  df = get_many_surv(state_id, end, start)
+ # dates = []
+ # past = []
+ # for i in range(77,-1,-1):
+ #   dates.append(start - timedelta(days=(i*14)))
+ # for value in dates:
+ #   case_num = get_fortnight_surv(state_id, value)[0]
+ #   past.append(case_num)
+
         
-  df = pandas.DataFrame(past)
+ # df = pandas.DataFrame(past)
   model = SARIMAX(df, order=order, seasonal_order=seasonal_order)
   model.initialize_approximate_diffuse()
   model_fit = model.fit(disp=False)
@@ -54,4 +57,3 @@ def eval_sarima():
   print("Root mean sqare error " + str(root_mean_squared_error(actual, predicted)))
   print(predicted)
   print(actual)
-

@@ -1,6 +1,10 @@
 import psycopg2
 import pandas
+import os, sys
 from datetime import datetime, timedelta
+path = os.path.dirname(os.path.abspath('../database/database_update.py'))
+if path not in sys.path:
+    sys.path.append(path)
 from database_connect import connect
 
 def add_country(country_name, region):
@@ -151,6 +155,22 @@ def get_many_surv(state_id, start, end):
     conn.close()
     return df
 
+def get_all_surv():
+    conn = connect()
+    cur = conn.cursor()
+
+    cur.execute("""
+    SELECT CaseNumber, StateID, EndDate
+    FROM fornight_surv_data
+    ORDER BY StateID, EndDate
+    """, ())
+    case_num = cur.fetchall()
+    df = pandas.DataFrame(case_num)
+    cur.close()
+    conn.close()
+    df = df.rename(columns={0: "CaseNum", 1: "StateID", 2: "Date"})
+    return df
+
 def add_trend(state_id, end_date, trend):
     conn = connect()
     cur = conn.cursor()
@@ -296,4 +316,3 @@ def get_vaccination(state_id, date):
     cur.close()
     conn.close()
     return vacc_perc
-

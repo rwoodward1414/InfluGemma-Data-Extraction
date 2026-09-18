@@ -2,6 +2,9 @@ from datetime import datetime, timedelta
 import os, sys
 import random
 import pandas
+import torch
+import numpy as np
+#from tqdm import tqdm
 
 
 path = os.path.dirname(os.path.abspath('../database/database_update.py'))
@@ -17,12 +20,19 @@ path = os.path.dirname(os.path.abspath('../../sick-post-classifier/classify_post
 if path not in sys.path:
     sys.path.append(path)
 
-from datebase_update import get_fortnight_surv, get_trend, get_post_perc, add_post_perc, get_region, get_state_demo
+from datebase_update import get_fortnight_surv, get_trend, get_post_perc, add_post_perc, get_region, get_state_demo, get_many_surv, get_vaccination
 from states import aus_state_dict, us_state_dict, aus_states, us_states
 from sarima import sarima_forecast
 from posts import gather_posts
 from classify_posts import classify_flu_posts
-        
+from rnn import FluRNN, FluRNNEncoder
+
+encoder = FluRNNEncoder(checkpoint_path="/srv/scratch/z5397970/v2_rnn/flu_rnn_model.pt", input_size=1, hidden_size=64, num_layers=2, num_states=60, embed_dim=8, bidirectional=True, dropout=0.2)
+checkpoint = torch.load("/srv/scratch/z5397970/v2_rnn/flu_rnn_model.pt", weights_only=False)
+
+encode_mean = checkpoint["data_mean"]
+encode_std = checkpoint["data_std"]
+state_to_idx = checkpoint["state_to_idx"]
 
 # Country : us or aus
 # State : Full US name, Initals Aus
@@ -55,6 +65,8 @@ def generate_prompt(country, state, date, output_path):
     two_weeks = get_fortnight_surv(state_id, two_weeks_ago)[0]
     current = get_fortnight_surv(state_id, start)[0]
     trend = get_trend(state_id, start)[0]
+    vacc_perc = get_vaccination(state_id, start)
+    
     print("Classifying posts")
     flu_post_percent = get_post_perc(region_id, start)
     if flu_post_percent == None:
@@ -67,6 +79,21 @@ def generate_prompt(country, state, date, output_path):
     
     print("Calculating SARIMA")
     sarima_output = sarima_forecast(state_id, date)
+
+    print("Getting RNN embeddings")
+    window_start = start - timedelta(days=(30*14))
+    window = get_many_surv(state_id, window_start, start)
+    window = np.log1p(window)
+    window = ((window - encode_mean) / encode_std)
+    sid = torch.tensor([state_to_idx[state_id]], dtype=torch.long)
+    values = window.to_numpy()
+    seq = torch.tensor(values, dtype=torch.float32).unsqueeze(0)
+    seq = seq.view(1, -1)
+    with torch.no_grad():
+        prediction, embedding = encoder.encode(seq,sid)
+        prediction = prediction.squeeze(0).numpy()
+        prediction = round(np.expm1(prediction * encode_std + encode_mean), 2)
+        embedding = embedding.squeeze(0).numpy()
 
     print("Creating prompt")
 
@@ -89,10 +116,10 @@ def generate_prompt(country, state, date, output_path):
     else:
         actual_trend = "Substantial Decrease"
 
-    prompt = f"State: {state}\nCountry: {country}\n\nCurrent case numers: {current}\n\nTwo-week ARIMA Case Prediction: {sarima_output}\n\nGoogle Trends Search Frequency: {trend}.\n\nDemographic Data:\nPopulation: {demo[0]}\nMedian age: {demo[1]}\nMedian yearly salary: {demo[2]}\n\nReddit Activity:\n{flu_post_percent}% of posts relate to influenza infection" 
+    prompt = f"State: {state}\nCountry: {country}\n\nCurrent case numers: {current}\n\nTwo-week ARIMA Case Prediction: {sarima_output}\nTwo-week LSTM Case Prediction: {prediction}\n\nGoogle Trends Search Frequency: {trend}.\n\nDemographic Data:\nPopulation: {demo[0]}\nMedian age: {demo[1]}\nMedian yearly salary: {demo[2]}\nPercentage vaccinated: {vacc_perc}\n\nReddit Activity:\n{flu_post_percent}% of posts relate to influenza infection" 
 
-    data = [[state, country, date, prompt, actual_cases, actual_trend, sarima_output]]
-    df = pandas.DataFrame(data, columns=['state', 'country', 'date', 'prompt', 'actual_cases', 'actual_trend', 'sarima_forecast'])
+    data = [[state, country, date, prompt, actual_cases, actual_trend, sarima_output, embedding]]
+    df = pandas.DataFrame(data, columns=['state', 'country', 'date', 'prompt', 'actual_cases', 'actual_trend', 'sarima_forecast', 'embedding'])
     df.to_csv(output_path, mode='a', index=False, sep="|", header=False)
 
 
@@ -126,7 +153,6 @@ def generate_seq(country, date, num, start_state = 0):
         for i in range(0,(num*14),14):
             gen_date = datetime.strftime((start + timedelta(days=i)), "%Y-%m-%d")
             print("Generating:" + state + ", " + gen_date)
-            generate_prompt(country, state, gen_date, "/srv/scratch/z5397970/v2_training/influgemma_v2_training.csv")
-
+            generate_prompt(country, state, gen_date, "/srv/scratch/z5397970/v2_training/influgemma_v2_test.csv")
 
 generate_seq(sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4]))

@@ -1,3 +1,11 @@
+
+import os, sys
+path = os.path.dirname(os.path.abspath('../database/database_update.py'))
+if path not in sys.path:
+    sys.path.append(path)
+path = os.path.dirname(os.path.abspath('../helper/states.py'))
+if path not in sys.path:
+    sys.path.append(path)
 from datetime import datetime
 
 # Convert week number to a datetime object that represents the start of the week
@@ -13,11 +21,11 @@ from states import us_state_dict
 
 state_dict = us_state_dict()
 
-file_path = "/home/ren/thesis/InfluGemma-Data-Extraction/data/us_2016-2025.csv"
+file_path = "/srv/scratch/z5397970/us2025real.csv"
 df = pandas.DataFrame(pandas.read_csv(file_path, skiprows=1, usecols=["REGION", "YEAR", "WEEK", "TOTAL A", "TOTAL B"]))
 
 # Convert X values to 0s and remove non-states
-non_states = ["District of Columbia", "Puerto Rico", "Virgin Islands", "New York City"]
+non_states = ["District of Columbia", "Puerto Rico", "Virgin Islands", "New York City", "Rhode Island"]
 mask = ~df["REGION"].isin(non_states)
 df = df[mask]
 df.replace({"TOTAL A": "X", "TOTAL B": "X"}, 0, inplace=True)
